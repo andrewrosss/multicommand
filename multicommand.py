@@ -1,9 +1,11 @@
 import argparse
 import pkgutil
+import sys
 from collections import OrderedDict
 from importlib import import_module
 from itertools import groupby
 from types import ModuleType
+from typing import Any
 from typing import Dict
 from typing import Tuple
 
@@ -61,7 +63,7 @@ def fill_index_parsers(
 
 
 def _get_index_parts(parts: Tuple[str, ...]) -> Tuple[str, ...]:
-    return parts[:-1] + ("_index",)
+    return (*parts[:-1], "_index")
 
 
 def groupby_subcommand(
@@ -96,10 +98,14 @@ def link_parsers(
             # link each non-index parser to the index parser
             if name == "_index":
                 continue
-            index_parts = subcommand + ("_index",)
+            index_parts = (*subcommand, "_index")
             sp = subparsers_actions[index_parts]
             sp.add_parser(
-                name, parents=[parser], description=parser.description, add_help=False
+                name,
+                parents=[parser],
+                description=parser.description,
+                add_help=False,
+                prog=" ".join((sys.argv[0].split("/")[-1], *subcommand, name)),
             )
 
         # link the index parser for this group to the index parser 1 level up,
@@ -107,7 +113,7 @@ def link_parsers(
         # been connected otherwise the children won't show up under the index.
         if not len(subcommand):
             continue
-        sp = subparsers_actions.get(subcommand[:-1] + ("_index",))
+        sp = subparsers_actions.get((*subcommand[:-1], "_index"))
         sp.add_parser(
             subcommand[-1],
             parents=[parsers["_index"]],
