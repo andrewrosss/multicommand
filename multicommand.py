@@ -8,7 +8,7 @@ from typing import Dict
 from typing import Tuple
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 def create_parser(command_pkg: ModuleType) -> argparse.ArgumentParser:

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "multicommand"
-version = "0.0.1"
+version = "0.0.2"
 description = "Create simple nested argparse CLIs"
 authors = ["Andrew Ross <andrew.ross.mail@gmail.com>"]
 license = "MIT"
