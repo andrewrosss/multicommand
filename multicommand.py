@@ -74,7 +74,7 @@ def groupby_subcommand(
 
 
 def get_subparsers_actions(
-    grouped_parsers: "OrderedDict[Tuple[str, ...], OrderedDict[str, argparse.ArgumentParser]]",
+    grouped_parsers: "OrderedDict[Tuple[str, ...], OrderedDict[str, argparse.ArgumentParser]]",  # noqa: E501
 ) -> Dict[Tuple[str, ...], argparse._SubParsersAction]:
     subparsers_actions: Dict[Tuple[str, ...], argparse._SubParsersAction] = {}
     for subcommand, parsers in grouped_parsers.items():
@@ -88,7 +88,7 @@ def get_subparsers_actions(
 
 
 def link_parsers(
-    grouped_parsers: "OrderedDict[Tuple[str, ...], OrderedDict[str, argparse.ArgumentParser]]",
+    grouped_parsers: "OrderedDict[Tuple[str, ...], OrderedDict[str, argparse.ArgumentParser]]",  # noqa: E501
     subparsers_actions: Dict[Tuple[str, ...], argparse._SubParsersAction],
 ) -> argparse.ArgumentParser:
     for subcommand, parsers in grouped_parsers.items():
