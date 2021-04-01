@@ -8,6 +8,9 @@ from typing import Dict
 from typing import Tuple
 
 
+__version__ = "0.0.1"
+
+
 def create_parser(command_pkg: ModuleType) -> argparse.ArgumentParser:
     parsers = load_parsers(command_pkg)
     parsers = fill_index_parsers(parsers)
@@ -76,10 +79,11 @@ def get_subparsers_actions(
     subparsers_actions: Dict[Tuple[str, ...], argparse._SubParsersAction] = {}
     for subcommand, parsers in grouped_parsers.items():
         for name, parser in parsers.items():
-            description = " " if name == "_index" and len(parsers) > 1 else None
-            subparsers_actions[subcommand + (name,)] = parser.add_subparsers(
-                description=description
-            )
+            if name == "_index" and len(parsers) > 1:
+                # only call .add_subparsers() if there's actually a need
+                subparsers_actions[subcommand + (name,)] = parser.add_subparsers(
+                    description=" "
+                )
     return subparsers_actions
 
 
