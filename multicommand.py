@@ -7,6 +7,7 @@ from itertools import groupby
 from types import ModuleType
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Tuple
 
 
@@ -15,7 +16,7 @@ __version__ = "0.0.2"
 
 def create_parser(command_pkg: ModuleType) -> argparse.ArgumentParser:
     parsers = load_parsers(command_pkg)
-    parsers = fill_index_parsers(parsers)
+    parsers = insert_missing_index_parsers(parsers)
     grouped_parsers = groupby_subcommand(parsers)
     subparsers_actions = get_subparsers_actions(grouped_parsers)
     root_parser = link_parsers(grouped_parsers, subparsers_actions)
@@ -27,7 +28,7 @@ def load_parsers(
 ) -> "OrderedDict[Tuple[str, ...], argparse.ArgumentParser]":
     pkg_path = command_pkg.__path__  # type: ignore
     pkg_name = command_pkg.__name__
-    parsers = []
+    parsers: List[Tuple[Tuple[str, ...], argparse.ArgumentParser]] = []
 
     for _, name, ispkg in pkgutil.walk_packages(pkg_path, prefix=pkg_name + "."):
         if ispkg:
@@ -36,15 +37,13 @@ def load_parsers(
         parser = getattr(mod, "parser", None)
         if parser is None:
             continue
-        rel_pkg_path = tuple(name.split("."))
-        parsers.append(
-            (rel_pkg_path[rel_pkg_path.index("commands") + 1 :], parser)  # noqa: E203
-        )
+        parts = tuple(name.split("."))
+        parsers.append((parts[parts.index("commands") + 1 :], parser))  # noqa: E203
 
     return OrderedDict(sorted(parsers, key=lambda item: (-len(item[0]), item[0])))
 
 
-def fill_index_parsers(
+def insert_missing_index_parsers(
     parsers: "OrderedDict[Tuple[str, ...], argparse.ArgumentParser]",
 ) -> "OrderedDict[Tuple[str, ...], argparse.ArgumentParser]":
     _parsers: Dict[Tuple[str, ...], argparse.ArgumentParser] = {}
@@ -94,23 +93,22 @@ def link_parsers(
     subparsers_actions: Dict[Tuple[str, ...], argparse._SubParsersAction],
 ) -> argparse.ArgumentParser:
     for subcommand, parsers in grouped_parsers.items():
+        # link the terminal parsers at this level to the index parser at this level.
         for name, parser in parsers.items():
             # link each non-index parser to the index parser
             if name == "_index":
                 continue
+            prog = " ".join((sys.argv[0].split("/")[-1], *subcommand, name))
+            parser_config = _extract_parser_config(parser)
+            parser_config.update(dict(prog=prog, add_help=False))
             index_parts = (*subcommand, "_index")
             sp = subparsers_actions[index_parts]
-            sp.add_parser(
-                name,
-                parents=[parser],
-                description=parser.description,
-                add_help=False,
-                prog=" ".join((sys.argv[0].split("/")[-1], *subcommand, name)),
-            )
+            sp.add_parser(name, parents=[parser], **parser_config)
 
-        # link the index parser for this group to the index parser 1 level up,
-        # Note: this linking has to be done _after_ all the child parsers have
-        # been connected otherwise the children won't show up under the index.
+        # link the index parser for this command to the index parser of the
+        # parent command
+        # NOTE: this linking has to be done _after_ all the child parsers have been
+        #       connected otherwise the children won't show up under the index.
         if not len(subcommand):
             continue
         sp = subparsers_actions.get((*subcommand[:-1], "_index"))
@@ -123,3 +121,7 @@ def link_parsers(
 
     root_parser = grouped_parsers[tuple()]["_index"]
     return root_parser
+
+
+def _extract_parser_config(parser: argparse.ArgumentParser) -> Dict[str, Any]:
+    return {k: v for k, v in vars(parser).items() if not k.startswith("_")}
