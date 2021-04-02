@@ -1,9 +1,11 @@
 [tool.poetry]
 name = "multicommand"
 version = "0.0.2"
-description = "Create simple nested argparse CLIs"
+description = "Simple subcommand CLIs with argparse"
 authors = ["Andrew Ross <andrew.ross.mail@gmail.com>"]
 license = "MIT"
+
+homepage = "https://github.com/andrewrosss/multicommand"
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
