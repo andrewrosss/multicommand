@@ -5,7 +5,22 @@ description = "Simple subcommand CLIs with argparse"
 authors = ["Andrew Ross <andrew.ross.mail@gmail.com>"]
 license = "MIT"
 
+readme = "README.md"
+
 homepage = "https://github.com/andrewrosss/multicommand"
+
+classifiers = [
+    "Programming Language :: Python :: 3.0",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: User Interfaces",
+    "Topic :: Utilities",
+    "Development Status :: 4 - Beta",
+    "Typing :: Typed",
+]
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
