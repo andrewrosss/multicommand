@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "multicommand"
-version = "0.0.3"
+version = "0.0.4"
 description = "Simple subcommand CLIs with argparse"
 authors = ["Andrew Ross <andrew.ross.mail@gmail.com>"]
 license = "MIT"
