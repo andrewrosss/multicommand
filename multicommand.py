@@ -54,6 +54,7 @@ def insert_missing_index_parsers(
 ) -> "OrderedDict[CommandParts, argparse.ArgumentParser]":
     _parsers: Dict[CommandParts, argparse.ArgumentParser] = {}
 
+    # insert index parsers for existing subcommands
     for parts, parser in list(parsers.items()):
         # add this parser to the new dict of parsers
         _parsers[parts] = parser
@@ -61,6 +62,13 @@ def insert_missing_index_parsers(
             # insert an index parser for this subcommand if one doesn't exist
             index_parts = _get_index_parts(parts)
             _parsers.setdefault(index_parts, argparse.ArgumentParser())
+
+    # insert intermediate index parsers
+    index_parser_keys = [k for k in _parsers.keys() if len(k) and k[-1] == "_index"]
+    for index_parts in index_parser_keys:
+        for i in range(len(index_parts)):
+            parts = index_parts[: len(index_parts) - 1 - i] + index_parts[-1:]
+            _parsers.setdefault(parts, argparse.ArgumentParser())
 
     return OrderedDict(
         sorted(_parsers.items(), key=lambda item: (-len(item[0]), item[0]))
@@ -86,7 +94,10 @@ def get_subparsers_actions(
     subparsers_actions: Dict[CommandParts, argparse._SubParsersAction] = {}
     for subcommand, parsers in grouped_parsers.items():
         for name, parser in parsers.items():
-            if name == "_index" and len(parsers) > 1:
+            is_intermediate = _is_intermediate_index_parser(
+                (*subcommand, name), grouped_parsers
+            )
+            if name == "_index" and (len(parsers) > 1 or is_intermediate):
                 # only call .add_subparsers() if there's actually a need
                 subparsers_actions[(*subcommand, name)] = parser.add_subparsers(
                     description=" "
@@ -117,7 +128,7 @@ def link_parsers(
         #       connected otherwise the children won't show up under the index.
         if not len(subcommand):
             continue
-        sp = subparsers_actions.get((*subcommand[:-1], "_index"))
+        sp = subparsers_actions[(*subcommand[:-1], "_index")]
         sp.add_parser(
             subcommand[-1],
             parents=[parsers["_index"]],
@@ -131,3 +142,19 @@ def link_parsers(
 
 def _extract_parser_config(parser: argparse.ArgumentParser) -> Dict[str, Any]:
     return {k: v for k, v in vars(parser).items() if not k.startswith("_")}
+
+
+def _is_intermediate_index_parser(
+    index_parts: CommandParts,
+    grouped_parsers: "OrderedDict[ParentCommandParts, OrderedDict[CommandName, argparse.ArgumentParser]]",  # noqa: E501
+):
+    return (
+        len(
+            [
+                k
+                for k in grouped_parsers.keys()
+                if len(k) == len(index_parts) and k[-1] != "_index"
+            ]
+        )
+        > 0
+    )
