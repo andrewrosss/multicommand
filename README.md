@@ -10,7 +10,9 @@ pip install multicommand
 
 ## Overview
 
-`multicommand` enables you to easily write CLIs with deeply nested (sub)commands using argparse. Just created the directory structure that reflects the CLI command structure you want, write your parsers in "isolation" and multi command will do the rest.
+`multicommand` enables you to **easily** write CLIs with deeply nested commands using vanilla argparse.
+
+Just create a directory structure that reflects the command structure you want, add a parser to each module (don't worry about hooking them up!), and multicommand will do the rest.
 
 multicommand turns a directory structure like this:
 
@@ -22,7 +24,7 @@ commands/binary/multiply.py
 commands/binary/subtract.py
 ```
 
-Turns into a command line application like this:
+Into a command line application like this:
 
 ```bash
 mycli unary negate ...
@@ -31,6 +33,9 @@ mycli binary divide ...
 mycli binary multiply ...
 mycli binary subtract ...
 ```
+
+All multicommand needs is for each module to define a module-level `parser` variable which points to an instance of `argparse.ArgumentParser`.
+
 
 ## Getting Started
 
