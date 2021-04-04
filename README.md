@@ -39,4 +39,4 @@ All multicommand needs is for each module to define a module-level `parser` vari
 
 ## Getting Started
 
-See the [simple example](examples/01_simple/README.md).
+See the [simple example](https://github.com/andrewrosss/multicommand/tree/master/examples/01_simple).

@@ -33,18 +33,18 @@ def load_parsers(
 ) -> "OrderedDict[CommandParts, argparse.ArgumentParser]":
     pkg_path = command_pkg.__path__  # type: ignore
     pkg_name = command_pkg.__name__
+    pkg_prefix = f"{pkg_name}."
     parsers: List[Tuple[CommandParts, argparse.ArgumentParser]] = []
 
-    for _, name, ispkg in pkgutil.walk_packages(pkg_path, prefix=pkg_name + "."):
+    for _, name, ispkg in pkgutil.walk_packages(pkg_path, prefix=pkg_prefix):
         if ispkg:
             continue  # we only care about modules
         mod = import_module(name, pkg_name)
         parser = getattr(mod, "parser", None)
         if parser is None:
-            continue  # there's no parser in this module
-        parts = tuple(name.split("."))
-        # TODO: 'commands' is hard-coded here, infer from pkg_name??
-        parsers.append((parts[parts.index("commands") + 1 :], parser))  # noqa: E203
+            continue  # there's no parser variable in this module
+        parts = tuple(name.replace(pkg_prefix, "").split("."))
+        parsers.append((parts, parser))
 
     return OrderedDict(sorted(parsers, key=lambda item: (-len(item[0]), item[0])))
 
