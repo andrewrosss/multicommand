@@ -2,6 +2,8 @@
 
 Simple subcommand CLIs with argparse.
 
+[![PyPI Version](https://img.shields.io/pypi/v/multicommand.svg)](https://pypi.org/project/multicommand/)
+
 ## Installation
 
 ```bash
@@ -35,7 +37,6 @@ mycli binary subtract ...
 ```
 
 All multicommand needs is for each module to define a module-level `parser` variable which points to an instance of `argparse.ArgumentParser`.
-
 
 ## Getting Started
 
