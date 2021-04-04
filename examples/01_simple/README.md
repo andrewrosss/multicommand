@@ -2,7 +2,7 @@
 
 ## The Scenario
 
-Suppose we've written a python package `calculator` which exposes some simple calculator functionality. it's a super simple package with the following structure:
+Suppose we've written a python package `calculator` which exposes some basic calculator functionality. It's a super simple package with the following structure:
 
 ```text
 .
