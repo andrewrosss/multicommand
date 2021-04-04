@@ -34,4 +34,4 @@ mycli binary subtract ...
 
 ## Getting Started
 
-See the [simple example](examples/01_simple/README.md).
+See the [simple example](https://github.com/andrewrosss/multicommand/tree/master/examples/01_simple).
