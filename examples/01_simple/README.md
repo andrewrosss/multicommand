@@ -13,7 +13,7 @@ Suppose we've written a python package `calculator` which exposes some basic cal
 └── setup.py
 ```
 
-All the action takes place in `calculator/__init__.py`, which contains the following code:
+So simple in fact that all the action takes place in `calculator/__init__.py`, which contains the following code:
 
 ```python
 def negate(x: float):

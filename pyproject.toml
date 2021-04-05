@@ -7,6 +7,8 @@ license = "MIT"
 
 readme = "README.md"
 
+keywords = ["cli", "commands", "subcommands", "argparse", "toole"]
+
 homepage = "https://github.com/andrewrosss/multicommand"
 
 classifiers = [
