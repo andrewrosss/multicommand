@@ -56,13 +56,13 @@ def create_registry(
     # insert intermediate index parsers if they don't already exist
     index_paths = [p for p in _parsers if p.name == "_index"]
     for index_path in index_paths:
-        for intermediate_path in iter_parents(index_path):
+        for intermediate_path in _iter_parents(index_path):
             _parsers.setdefault(intermediate_path / "_index", ArgumentParser())
 
     return OrderedDict(sorted(_parsers.items(), key=_sort_key))
 
 
-def iter_parents(fp: PurePath):
+def _iter_parents(fp: PurePath):
     while len(fp.parts):
         yield fp.parent
         fp = fp.parent
@@ -72,17 +72,17 @@ def _sort_key(item: Tuple[PurePath, ArgumentParser]):
     return (-len(item[0].parts), item[0])
 
 
-def groupby_subcommand(
+def _groupby_subcommand(
     registry: "OrderedDict[PurePath, ArgumentParser]",
 ) -> List[Tuple[PurePath, List[Tuple[str, ArgumentParser]]]]:
     groups = groupby(registry.items(), key=lambda item: item[0].parent)
     return [(k, [(path.name, parser) for path, parser in g]) for k, g in groups]
 
 
-def create_subparsers_actions(
+def _create_subparsers_actions(
     registry: "OrderedDict[PurePath, ArgumentParser]",
 ) -> Dict[PurePath, _SubParsersAction]:
-    grouped_parsers = groupby_subcommand(registry)
+    grouped_parsers = _groupby_subcommand(registry)
     subparsers_actions: Dict[PurePath, _SubParsersAction] = {}
     for subcommand, parsers in grouped_parsers:
         for name, parser in parsers:
@@ -95,8 +95,8 @@ def create_subparsers_actions(
 
 
 def link_parsers(registry: "OrderedDict[PurePath, ArgumentParser]") -> ArgumentParser:
-    grouped_parsers = groupby_subcommand(registry)
-    subparsers_actions = create_subparsers_actions(registry)
+    grouped_parsers = _groupby_subcommand(registry)
+    subparsers_actions = _create_subparsers_actions(registry)
     for subcommand, parsers in grouped_parsers:
         # link the terminal parsers at this level to the index parser at this level.
         for name, parser in parsers:
