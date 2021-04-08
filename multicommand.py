@@ -2,12 +2,13 @@ import pkgutil
 import sys
 from argparse import _SubParsersAction
 from argparse import ArgumentParser
+from collections import defaultdict
 from collections import OrderedDict
 from importlib import import_module
-from itertools import groupby
 from pathlib import PurePath
 from types import ModuleType
 from typing import Any
+from typing import DefaultDict
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -46,20 +47,24 @@ def load_parsers(
 
 def create_registry(
     parsers: List[Tuple[PurePath, ArgumentParser]],
-) -> "OrderedDict[PurePath, ArgumentParser]":
-    _parsers = dict(parsers)
+) -> "OrderedDict[PurePath, Dict[str, ArgumentParser]]":
+    # add the existing parsers
+    _parsers: DefaultDict[PurePath, DefaultDict[str, ArgumentParser]]
+    _parsers = defaultdict(lambda: defaultdict(ArgumentParser))
+    for path, parser in parsers:
+        _parsers[path.parent][path.name] = parser
     # insert index parsers for existing subcommands if they don't already exist
     for path, _ in parsers:
         if len(path.parts) and path.name != "_index":
-            index_path = path.parent / "_index"
-            _parsers.setdefault(index_path, ArgumentParser())
+            # asking for it creates a blank parser
+            _parsers[path.parent]["_index"]
     # insert intermediate index parsers if they don't already exist
-    index_paths = [p for p in _parsers if p.name == "_index"]
+    index_paths = [s / n for s, p in _parsers.items() for n in p if n == "_index"]
     for index_path in index_paths:
         for intermediate_path in _iter_parents(index_path):
-            _parsers.setdefault(intermediate_path / "_index", ArgumentParser())
-
-    return OrderedDict(sorted(_parsers.items(), key=_sort_key))
+            # asking for it creates a blank parser
+            _parsers[intermediate_path]["_index"]
+    return OrderedDict({k: dict(v) for k, v in sorted(_parsers.items(), key=_sort_key)})
 
 
 def _iter_parents(fp: PurePath):
@@ -68,38 +73,17 @@ def _iter_parents(fp: PurePath):
         fp = fp.parent
 
 
-def _sort_key(item: Tuple[PurePath, ArgumentParser]):
+def _sort_key(item: Tuple[PurePath, Dict[str, ArgumentParser]]):
     return (-len(item[0].parts), item[0])
 
 
-def _groupby_subcommand(
-    registry: "OrderedDict[PurePath, ArgumentParser]",
-) -> List[Tuple[PurePath, List[Tuple[str, ArgumentParser]]]]:
-    groups = groupby(registry.items(), key=lambda item: item[0].parent)
-    return [(k, [(path.name, parser) for path, parser in g]) for k, g in groups]
-
-
-def _create_subparsers_actions(
-    registry: "OrderedDict[PurePath, ArgumentParser]",
-) -> Dict[PurePath, _SubParsersAction]:
-    grouped_parsers = _groupby_subcommand(registry)
-    subparsers_actions: Dict[PurePath, _SubParsersAction] = {}
-    for subcommand, parsers in grouped_parsers:
-        for name, parser in parsers:
-            path = subcommand / name
-            is_intermediate = _is_intermediate_index_parser(path, grouped_parsers)
-            if name == "_index" and (len(parsers) > 1 or is_intermediate):
-                # only call .add_subparsers() if there's actually a need
-                subparsers_actions[path] = parser.add_subparsers(description=" ")
-    return subparsers_actions
-
-
-def link_parsers(registry: "OrderedDict[PurePath, ArgumentParser]") -> ArgumentParser:
-    grouped_parsers = _groupby_subcommand(registry)
+def link_parsers(
+    registry: "OrderedDict[PurePath, Dict[str, ArgumentParser]]",
+) -> ArgumentParser:
     subparsers_actions = _create_subparsers_actions(registry)
-    for subcommand, parsers in grouped_parsers:
+    for subcommand, parsers in registry.items():
         # link the terminal parsers at this level to the index parser at this level.
-        for name, parser in parsers:
+        for name, parser in parsers.items():
             if name == "_index":
                 continue  # we're linking each non-index parser to the index parser
             prog = " ".join((sys.argv[0].split("/")[-1], *(subcommand.parts), name))
@@ -115,7 +99,7 @@ def link_parsers(registry: "OrderedDict[PurePath, ArgumentParser]") -> ArgumentP
         #       connected otherwise the children won't show up under the index.
         if not len(subcommand.parts):
             continue
-        index_parser = [parser for name, parser in parsers if name == "_index"][0]
+        index_parser = parsers["_index"]
         sp = subparsers_actions[subcommand.parent / "_index"]
         sp.add_parser(
             subcommand.name,
@@ -124,26 +108,43 @@ def link_parsers(registry: "OrderedDict[PurePath, ArgumentParser]") -> ArgumentP
             add_help=False,
         )
 
-    root_parser = registry[PurePath("_index")]
+    root_parser = registry[PurePath()]["_index"]
     return root_parser
+
+
+def _create_subparsers_actions(
+    registry: "OrderedDict[PurePath, Dict[str, ArgumentParser]]",
+) -> Dict[PurePath, _SubParsersAction]:
+    subparsers_actions: Dict[PurePath, _SubParsersAction] = {}
+    for subcommand, parsers in registry.items():
+        for name, parser in parsers.items():
+            path = subcommand / name
+            if _requires_subparsers(registry, path):
+                # only call .add_subparsers() if there's actually a need
+                subparsers_actions[path] = parser.add_subparsers(description=" ")
+    return subparsers_actions
+
+
+def _requires_subparsers(
+    registry: "OrderedDict[PurePath, Dict[str, ArgumentParser]]",
+    path: PurePath,
+):
+    # non-index terminal parsers DO NOT get subparsers
+    if path.name != "_index":
+        return False
+    # index parsers with sibling parsers DO get subparsers
+    has_siblings = len(registry[path.parent]) > 1
+    if has_siblings:
+        return True
+    # intermediate index parsers DO get subparsers
+    same_level_non_index_paths = [
+        parent_path
+        for parent_path in registry
+        if len(parent_path.parts) == len(path.parts) and parent_path.name != "_index"
+    ]
+    is_intermediate = len(same_level_non_index_paths) > 0
+    return is_intermediate
 
 
 def _extract_parser_config(parser: ArgumentParser) -> Dict[str, Any]:
     return {k: v for k, v in vars(parser).items() if not k.startswith("_")}
-
-
-def _is_intermediate_index_parser(
-    index_path: PurePath,
-    grouped_parsers: List[Tuple[PurePath, List[Tuple[str, ArgumentParser]]]],
-):
-    # TODO: this function only makes sense in the context where index_path has
-    #       already been determined to not have any non-index sibling parsers,
-    #       which _is_ the case when this function is called above, but
-    #       outside that context it might not yeild the correct results.
-    same_level_non_index_paths = [
-        parent_path
-        for parent_path, _ in grouped_parsers
-        if len(parent_path.parts) == len(index_path.parts)
-        and parent_path.name != "_index"
-    ]
-    return len(same_level_non_index_paths) > 0
