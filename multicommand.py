@@ -100,13 +100,11 @@ def link_parsers(
         if not len(subcommand.parts):
             continue
         index_parser = parsers["_index"]
+        prog = " ".join((sys.argv[0].split("/")[-1], *(subcommand.parts)))
+        parser_config = _extract_parser_config(index_parser)
+        parser_config.update(dict(prog=prog, add_help=False))
         sp = subparsers_actions[subcommand.parent / "_index"]
-        sp.add_parser(
-            subcommand.name,
-            parents=[index_parser],
-            description=index_parser.description,
-            add_help=False,
-        )
+        sp.add_parser(subcommand.name, parents=[index_parser], **parser_config)
 
     root_parser = registry[PurePath()]["_index"]
     return root_parser
