@@ -39,6 +39,8 @@ def load_parsers(
         parser = getattr(mod, "parser", None)
         if parser is None:
             continue  # there's no parser variable in this module
+        if not isinstance(parser, ArgumentParser):
+            continue  # there was a parser, but it wasnt a (subclass of) ArgumentParser
         parts = PurePath(*(name.replace(pkg_prefix, "").split(".")))
         parsers.append((parts, parser))
 
