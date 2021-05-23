@@ -58,6 +58,7 @@ def create_registry(
         if len(path.parts) and path.name != "_index":
             # asking for it creates a blank parser
             _parsers[path.parent]["_index"]
+    _parsers[PurePath()]["_index"]  # init the root index parser if it does not exist
     # insert intermediate index parsers if they don't already exist
     index_paths = [s / n for s, p in _parsers.items() for n in p if n == "_index"]
     for index_path in index_paths:
