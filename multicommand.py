@@ -12,9 +12,11 @@ from typing import DefaultDict
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Union
 
 
 __version__ = "0.0.8"
+SHORT_SUMMARY_TRUNCATION_LENGTH = 50
 
 
 def create_parser(command_pkg: ModuleType) -> ArgumentParser:
@@ -91,7 +93,9 @@ def link_parsers(
                 continue  # we're linking each non-index parser to the index parser
             prog = " ".join((sys.argv[0].split("/")[-1], *(subcommand.parts), name))
             parser_config = _extract_parser_config(parser)
-            parser_config.update(dict(prog=prog, add_help=False))
+            parser_config.update(
+                dict(prog=prog, add_help=False, help=_short_summary(parser.description))
+            )
             index_path = subcommand / "_index"
             sp = subparsers_actions[index_path]
             sp.add_parser(name, parents=[parser], **parser_config)
@@ -105,7 +109,11 @@ def link_parsers(
         index_parser = parsers["_index"]
         prog = " ".join((sys.argv[0].split("/")[-1], *(subcommand.parts)))
         parser_config = _extract_parser_config(index_parser)
-        parser_config.update(dict(prog=prog, add_help=False))
+        parser_config.update(
+            dict(
+                prog=prog, add_help=False, help=_short_summary(index_parser.description)
+            )
+        )
         sp = subparsers_actions[subcommand.parent / "_index"]
         sp.add_parser(subcommand.name, parents=[index_parser], **parser_config)
 
@@ -122,7 +130,9 @@ def _create_subparsers_actions(
             path = subcommand / name
             if _requires_subparsers(registry, path):
                 # only call .add_subparsers() if there's actually a need
-                subparsers_actions[path] = parser.add_subparsers(description=" ")
+                subparsers_actions[path] = parser.add_subparsers(
+                    description=" ", metavar="[command]"
+                )
     return subparsers_actions
 
 
@@ -147,6 +157,12 @@ def _requires_subparsers(
     ]
     is_intermediate = len(same_level_non_index_paths) > 0
     return is_intermediate
+
+
+def _short_summary(description: Union[str, None]) -> Union[str, None]:
+    if description is None or len(description) <= SHORT_SUMMARY_TRUNCATION_LENGTH:
+        return description
+    return description[: SHORT_SUMMARY_TRUNCATION_LENGTH - 4] + " ..."
 
 
 def _extract_parser_config(parser: ArgumentParser) -> Dict[str, Any]:
