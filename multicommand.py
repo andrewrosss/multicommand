@@ -139,9 +139,11 @@ def _requires_subparsers(
         return True
     # intermediate index parsers DO get subparsers
     same_level_non_index_paths = [
-        parent_path
-        for parent_path in registry
-        if len(parent_path.parts) == len(path.parts) and parent_path.name != "_index"
+        other_path
+        for other_path in registry
+        if len(other_path.parts) == len(path.parts)  # same level/depth
+        and other_path.parent.parts == path.parent.parts  # same parent
+        and other_path.name != "_index"  # non-index parser
     ]
     is_intermediate = len(same_level_non_index_paths) > 0
     return is_intermediate
