@@ -15,7 +15,7 @@ from typing import Tuple
 from typing import Union
 
 
-__version__ = "0.0.8"
+__version__ = "0.1.0"
 SHORT_SUMMARY_TRUNCATION_LENGTH = 50
 
 
