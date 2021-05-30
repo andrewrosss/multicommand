@@ -7,7 +7,7 @@ license = "MIT"
 
 readme = "README.md"
 
-keywords = ["cli", "commands", "subcommands", "argparse", "toole"]
+keywords = ["cli", "commands", "subcommands", "argparse", "tool"]
 
 homepage = "https://github.com/andrewrosss/multicommand"
 
