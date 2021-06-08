@@ -10,6 +10,8 @@ readme = "README.md"
 keywords = ["cli", "commands", "subcommands", "argparse", "tool"]
 
 homepage = "https://github.com/andrewrosss/multicommand"
+repository = "https://github.com/andrewrosss/multicommand"
+documentation = "https://multicommand.vercel.app"
 
 classifiers = [
     "Programming Language :: Python :: 3.0",
