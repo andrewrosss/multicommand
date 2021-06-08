@@ -21,7 +21,9 @@ function HomepageHeader() {
           src="/img/logo.svg"
           className={clsx("shadow--lw", styles.heroImage)}
         />
-        <h1 className="hero__title">{siteConfig.title}</h1>
+        <h1 className={clsx("hero__title", styles.heroTitle)}>
+          {siteConfig.title}
+        </h1>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <div className={styles.buttons}>
           <Link

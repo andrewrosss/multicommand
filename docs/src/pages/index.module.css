@@ -31,6 +31,10 @@
   .heroBanner {
     padding: 2rem;
   }
+
+  .heroTitle {
+    font-size: 2.5rem;
+  }
 }
 
 .buttons {
