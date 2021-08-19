@@ -2,9 +2,9 @@
 
 Simple subcommand CLIs with argparse.
 
-[![PyPI Version](https://img.shields.io/pypi/v/multicommand.svg)](https://pypi.org/project/multicommand/)
+[![PyPI Version](https://img.shields.io/pypi/v/multicommand.svg)](https://pypi.org/project/multicommand/) [![Downloads](https://static.pepy.tech/personalized-badge/multicommand?period=month&units=international_system&left_color=grey&right_color=brightgreen&left_text=downloads%20/%20month)](https://pepy.tech/project/multicommand)
 
-`multicommand` uses only the standard library and is ~100 lines of code (modulo comments and whitespace)
+`multicommand` uses only the standard library and is ~150 lines of code (modulo comments and whitespace)
 
 ## Installation
 
