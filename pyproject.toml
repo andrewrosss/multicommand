@@ -27,15 +27,15 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.2"
+python = "^3.7.0"
 
 [tool.poetry.dev-dependencies]
-black = "^21.5b2"
-flake8 = "^3.9.0"
-pylint = "^2.7.4"
-reorder-python-imports = "^2.4.0"
+black = "^22.1.0"
+flake8 = "^4.0.1"
+pylint = "^2.12.2"
+reorder-python-imports = "^3.0.1"
 bump2version = "^1.0.1"
-pre-commit = "^2.13.0"
+pre-commit = "^2.17.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
