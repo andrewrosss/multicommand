@@ -1,178 +1,147 @@
+from __future__ import annotations
+
 import pkgutil
 import sys
-from argparse import _SubParsersAction
+from argparse import _SubParsersAction  # type: ignore
 from argparse import ArgumentParser
-from collections import defaultdict
-from collections import OrderedDict
+from dataclasses import dataclass
+from dataclasses import field
 from importlib import import_module
-from pathlib import PurePath
 from types import ModuleType
 from typing import Any
-from typing import DefaultDict  # noqa: TYP001
-from typing import Dict  # noqa: TYP001
-from typing import List  # noqa: TYP001
-from typing import Tuple  # noqa: TYP001
-from typing import Union  # noqa: TYP001
+from typing import Iterator
+from typing import NamedTuple
+from typing import TypeVar
+from typing import Union
 
 
 __version__ = "0.1.1"
 __all__ = ("create_parser",)
 
 SHORT_SUMMARY_TRUNCATION_LENGTH = 50
+ROOT_NAME = "__root__"
 
 
 def create_parser(command_pkg: ModuleType) -> ArgumentParser:
-    parsers = load_parsers(command_pkg)
-    registry = create_registry(parsers)
-    root_parser = link_parsers(registry)
-    return root_parser
+    *_, prefix = sys.argv[0].split("/")
+    root = _create_index_node(command_pkg)
+    _populate_subparsers_actions(root)
+    _link_parsers(root, prefix)
+    return root.parser
 
 
-def load_parsers(
-    command_pkg: ModuleType,
-) -> List[Tuple[PurePath, ArgumentParser]]:
-    pkg_path = command_pkg.__path__  # type: ignore
-    pkg_name = command_pkg.__name__
-    pkg_prefix = f"{pkg_name}."
-    parsers: List[Tuple[PurePath, ArgumentParser]] = []
-
-    for _, name, ispkg in pkgutil.walk_packages(pkg_path, prefix=pkg_prefix):
-        if ispkg:
-            continue  # we only care about modules
-        mod = import_module(name, pkg_name)
-        parser = getattr(mod, "parser", None)
-        if parser is None:
-            continue  # there's no parser variable in this module
-        if not isinstance(parser, ArgumentParser):
-            continue  # there was a parser, but it wasnt a (subclass of) ArgumentParser
-        parts = PurePath(*(name.replace(pkg_prefix, "").split(".")))
-        parsers.append((parts, parser))
-
-    return parsers
+@dataclass
+class _TerminalNode:
+    name: str
+    parser: ArgumentParser
 
 
-def create_registry(
-    parsers: List[Tuple[PurePath, ArgumentParser]],
-) -> "OrderedDict[PurePath, Dict[str, ArgumentParser]]":
-    # add the existing parsers
-    _parsers: DefaultDict[PurePath, DefaultDict[str, ArgumentParser]]
-    _parsers = defaultdict(lambda: defaultdict(ArgumentParser))
-    for path, parser in parsers:
-        _parsers[path.parent][path.name] = parser
-    # insert index parsers for existing subcommands if they don't already exist
-    for path, _ in parsers:
-        if len(path.parts) and path.name != "_index":
-            # asking for it creates a blank parser
-            _parsers[path.parent]["_index"]
-    _parsers[PurePath()]["_index"]  # init the root index parser if it does not exist
-    # insert intermediate index parsers if they don't already exist
-    index_paths = [s / n for s, p in _parsers.items() for n in p if n == "_index"]
-    for index_path in index_paths:
-        for intermediate_path in _iter_parents(index_path):
-            # asking for it creates a blank parser
-            _parsers[intermediate_path]["_index"]
-    return OrderedDict({k: dict(v) for k, v in sorted(_parsers.items(), key=_sort_key)})
+@dataclass
+class _IndexNode:
+    name: str
+    parser: ArgumentParser = field(default_factory=lambda: ArgumentParser())
+    subparsers_action: _SubParsersAction[ArgumentParser] | None = None
+    children: list[_TerminalNode | _IndexNode] = field(init=False, default_factory=list)
 
 
-def _iter_parents(fp: PurePath):
-    while len(fp.parts):
-        yield fp.parent
-        fp = fp.parent
+_Node = Union[_IndexNode, _TerminalNode]
+T = TypeVar("T")
 
 
-def _sort_key(item: Tuple[PurePath, Dict[str, ArgumentParser]]):
-    return (-len(item[0].parts), item[0])
+# If multiple inheritance with NamedTuple was supported we could replace
+# _TerminalInfo and _IndexInfo with a single generic _NodeInfo class
+class _TerminalInfo(NamedTuple):
+    node: _TerminalNode
+    parents: tuple[_Node, ...] | None
 
 
-def link_parsers(
-    registry: "OrderedDict[PurePath, Dict[str, ArgumentParser]]",
-) -> ArgumentParser:
-    subparsers_actions = _create_subparsers_actions(registry)
-    for subcommand, parsers in registry.items():
-        # link the terminal parsers at this level to the index parser at this level.
-        for name, parser in parsers.items():
-            if name == "_index":
-                continue  # we're linking each non-index parser to the index parser
-            prog = " ".join((sys.argv[0].split("/")[-1], *(subcommand.parts), name))
-            parser_config = _extract_parser_config(parser)
+class _IndexInfo(NamedTuple):
+    node: _IndexNode
+    parents: tuple[_Node, ...] | None
+
+
+def _create_index_node(pkg: ModuleType, name: str | None = None) -> _IndexNode:
+    _name = ROOT_NAME if name is None else name
+    index_node = _IndexNode(_name)
+
+    for info in pkgutil.iter_modules(pkg.__path__, pkg.__name__ + "."):
+        *_, suffix = info.name.split(".")
+        if not info.ispkg:
+            # terminal parser
+            mod = import_module(info.name)
+            parser = getattr(mod, "parser", None)
+            if parser is None:
+                continue  # there's no parser variable in this module
+            if not isinstance(parser, ArgumentParser):
+                continue  # there was a parser, but it wasnt an ArgumentParser
+
+            if suffix == "_index":
+                index_node.parser = parser  # user has provided an _index module
+            else:
+                node = _TerminalNode(suffix, parser)
+                index_node.children.append(node)
+        else:
+            # index parser
+            _pkg = import_module(info.name)
+            node = _create_index_node(_pkg, suffix)
+            index_node.children.append(node)
+
+    return index_node
+
+
+def _populate_subparsers_actions(node: _IndexNode):
+    for n, _ in _iter_indexes(node):
+        if len(n.children) == 0:
+            continue  # this index parser has no children so it doesn't need subparsers
+        p = n.parser
+        n.subparsers_action = p.add_subparsers(description=" ", metavar="command")
+
+
+def _link_parsers(node: _IndexNode, prefix: str) -> None:
+    for index, parents in _iter_indexes(node):
+        for child in index.children:
+            if not index.subparsers_action:
+                continue
+
+            intermediate = [n.name for n in parents] if parents is not None else []
+            prog = " ".join((prefix, *intermediate, child.name))
+            parser_config = _extract_parser_config(child.parser)
             parser_config.update(
                 dict(
                     prog=prog,
                     add_help=False,
-                    help=_short_summary(parser.description),
+                    help=_short_summary(child.parser.description),
                 ),
             )
-            index_path = subcommand / "_index"
-            sp = subparsers_actions[index_path]
-            sp.add_parser(name, parents=[parser], **parser_config)
-
-        # link the index parser for this command to the index parser of the
-        # parent command
-        # NOTE: this linking has to be done _after_ all the child parsers have been
-        #       connected otherwise the children won't show up under the index.
-        if not len(subcommand.parts):
-            continue
-        index_parser = parsers["_index"]
-        prog = " ".join((sys.argv[0].split("/")[-1], *(subcommand.parts)))
-        parser_config = _extract_parser_config(index_parser)
-        parser_config.update(
-            dict(
-                prog=prog,
-                add_help=False,
-                help=_short_summary(index_parser.description),
-            ),
-        )
-        sp = subparsers_actions[subcommand.parent / "_index"]
-        sp.add_parser(subcommand.name, parents=[index_parser], **parser_config)
-
-    root_parser = registry[PurePath()]["_index"]
-    return root_parser
+            sp = index.subparsers_action
+            sp.add_parser(child.name, parents=[child.parser], **parser_config)
 
 
-def _create_subparsers_actions(
-    registry: "OrderedDict[PurePath, Dict[str, ArgumentParser]]",
-) -> Dict[PurePath, _SubParsersAction]:
-    subparsers_actions: Dict[PurePath, _SubParsersAction] = {}
-    for subcommand, parsers in registry.items():
-        for name, parser in parsers.items():
-            path = subcommand / name
-            if _requires_subparsers(registry, path):
-                # only call .add_subparsers() if there's actually a need
-                subparsers_actions[path] = parser.add_subparsers(
-                    description=" ",
-                    metavar="[command]",
-                )
-    return subparsers_actions
+def _iter_indexes(node: _IndexNode) -> Iterator[_IndexInfo]:
+    for info in _iter_nodes_with_parents(node):
+        if isinstance(info, _IndexInfo):
+            yield info
 
 
-def _requires_subparsers(
-    registry: "OrderedDict[PurePath, Dict[str, ArgumentParser]]",
-    path: PurePath,
-):
-    # non-index terminal parsers DO NOT get subparsers
-    if path.name != "_index":
-        return False
-    # index parsers with sibling parsers DO get subparsers
-    has_siblings = len(registry[path.parent]) > 1
-    if has_siblings:
-        return True
-    # intermediate index parsers DO get subparsers
-    same_level_non_index_paths = [
-        other_path
-        for other_path in registry
-        if len(other_path.parts) == len(path.parts)  # same level/depth
-        and other_path.parent.parts == path.parent.parts  # same parent
-        and other_path.name != "_index"  # non-index parser
-    ]
-    is_intermediate = len(same_level_non_index_paths) > 0
-    return is_intermediate
+def _iter_nodes_with_parents(
+    node: _Node,
+    parents: tuple[_Node, ...] | None = None,
+) -> Iterator[_IndexInfo | _TerminalInfo]:
+    """Traverse the tree depth-first post-order"""
+    if isinstance(node, _IndexNode):
+        _parents = (node,) if parents is None else parents + (node,)
+        for child in node.children:
+            yield from _iter_nodes_with_parents(child, _parents)
+        yield _IndexInfo(node, parents)
+    else:
+        yield _TerminalInfo(node, parents)
 
 
-def _short_summary(description: Union[str, None]) -> Union[str, None]:
+def _short_summary(description: str | None) -> str | None:
     if description is None or len(description) <= SHORT_SUMMARY_TRUNCATION_LENGTH:
         return description
     return description[: SHORT_SUMMARY_TRUNCATION_LENGTH - 4] + " ..."
 
 
-def _extract_parser_config(parser: ArgumentParser) -> Dict[str, Any]:
+def _extract_parser_config(parser: ArgumentParser) -> dict[str, Any]:
     return {k: v for k, v in vars(parser).items() if not k.startswith("_")}
