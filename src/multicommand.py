@@ -18,13 +18,19 @@ from typing import Union
 __version__ = "0.1.1"
 __all__ = ("create_parser",)
 
-SHORT_SUMMARY_TRUNCATION_LENGTH = 50
 ROOT_NAME = "__root__"
+INDEX_MODULE = "_index"
+PARSER_VARIABLE = "parser"
+SHORT_SUMMARY_TRUNCATION_LENGTH = 50
 
 
-def create_parser(command_pkg: ModuleType) -> ArgumentParser:
+def create_parser(
+    command_pkg: ModuleType,
+    index_module: str = INDEX_MODULE,
+    parser_variable: str = PARSER_VARIABLE,
+) -> ArgumentParser:
     *_, prefix = sys.argv[0].split("/")
-    root = _create_index_node(command_pkg)
+    root = _create_index_node(command_pkg, ROOT_NAME, index_module, parser_variable)
     _populate_subparsers_actions(root)
     _link_parsers(root, prefix)
     return root.parser
@@ -60,30 +66,32 @@ class _IndexInfo(NamedTuple):
     parents: tuple[_Node, ...] | None
 
 
-def _create_index_node(pkg: ModuleType, name: str | None = None) -> _IndexNode:
-    _name = ROOT_NAME if name is None else name
-    index_node = _IndexNode(_name)
+def _create_index_node(
+    pkg: ModuleType,
+    name: str,
+    index_module: str,
+    parser_variable: str,
+) -> _IndexNode:
+    index_node = _IndexNode(name)
 
     for info in pkgutil.iter_modules(pkg.__path__, pkg.__name__ + "."):
         *_, suffix = info.name.split(".")
         if not info.ispkg:
             # terminal parser
             mod = import_module(info.name)
-            parser = getattr(mod, "parser", None)
-            if parser is None:
-                continue  # there's no parser variable in this module
+            parser = getattr(mod, parser_variable, None)
             if not isinstance(parser, ArgumentParser):
-                continue  # there was a parser, but it wasnt an ArgumentParser
+                continue
 
-            if suffix == "_index":
-                index_node.parser = parser  # user has provided an _index module
+            if suffix == index_module:
+                index_node.parser = parser  # user has provided an index module
             else:
                 node = _TerminalNode(suffix, parser)
                 index_node.children.append(node)
         else:
             # index parser
             _pkg = import_module(info.name)
-            node = _create_index_node(_pkg, suffix)
+            node = _create_index_node(_pkg, suffix, index_module, parser_variable)
             index_node.children.append(node)
 
     return index_node
