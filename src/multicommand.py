@@ -106,13 +106,9 @@ def _link_parsers(node: _IndexNode, prefix: str) -> None:
             intermediate = [n.name for n in parents] if parents is not None else []
             prog = " ".join((prefix, *intermediate, child.name))
             parser_config = _extract_parser_config(child.parser)
-            parser_config.update(
-                dict(
-                    prog=prog,
-                    add_help=False,
-                    help=_short_summary(child.parser.description),
-                ),
-            )
+            parser_config["prog"] = prog
+            parser_config["help"] = _short_summary(child.parser.description)
+            parser_config["add_help"] = False
             sp = index.subparsers_action
             sp.add_parser(child.name, parents=[child.parser], **parser_config)
 
