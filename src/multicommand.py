@@ -18,7 +18,6 @@ from typing import Union
 __version__ = "0.1.1"
 __all__ = ("create_parser",)
 
-ROOT_NAME = "__root__"
 INDEX_MODULE = "_index"
 PARSER_VARIABLE = "parser"
 SHORT_SUMMARY_TRUNCATION_LENGTH = 50
@@ -32,9 +31,9 @@ def create_parser(
 ) -> ArgumentParser:
     if prog is None:
         *_, prog = sys.argv[0].split("/")
-    root = _create_index_node(command_pkg, ROOT_NAME, index_module, parser_variable)
+    root = _create_index_node(command_pkg, prog, index_module, parser_variable)
     _populate_subparsers_actions(root)
-    _link_parsers(root, prog)
+    _link_parsers(root)
     return root.parser
 
 
@@ -49,7 +48,11 @@ class _IndexNode:
     name: str
     parser: ArgumentParser = field(default_factory=lambda: ArgumentParser())
     subparsers_action: _SubParsersAction[ArgumentParser] | None = None
-    children: list[_TerminalNode | _IndexNode] = field(init=False, default_factory=list)
+    children: list[_TerminalNode | _IndexNode] = field(
+        init=False,
+        repr=False,
+        default_factory=list,
+    )
 
 
 _Node = Union[_IndexNode, _TerminalNode]
@@ -107,14 +110,14 @@ def _populate_subparsers_actions(node: _IndexNode):
         n.subparsers_action = p.add_subparsers(description=" ", metavar="command")
 
 
-def _link_parsers(node: _IndexNode, prefix: str) -> None:
+def _link_parsers(node: _IndexNode) -> None:
     for index, parents in _iter_indexes(node):
         for child in index.children:
             if not index.subparsers_action:
                 continue
 
             intermediate = [n.name for n in parents] if parents is not None else []
-            prog = " ".join((prefix, *intermediate, child.name))
+            prog = " ".join((*intermediate, index.name, child.name))
             parser_config = _extract_parser_config(child.parser)
             parser_config["prog"] = prog
             parser_config["help"] = _short_summary(child.parser.description)
