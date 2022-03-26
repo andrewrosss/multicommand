@@ -22,7 +22,7 @@ setup(
     author="Andrew Ross",
     author_email="andrew.ross.mail@gmail.com",
     packages=find_packages(),
-    python_requires=">=3.6, <4",
+    python_requires=">=3.7, <4",
     install_requires=["multicommand"],
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
