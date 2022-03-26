@@ -26,13 +26,15 @@ SHORT_SUMMARY_TRUNCATION_LENGTH = 50
 
 def create_parser(
     command_pkg: ModuleType,
+    prog: str | None = None,
     index_module: str = INDEX_MODULE,
     parser_variable: str = PARSER_VARIABLE,
 ) -> ArgumentParser:
-    *_, prefix = sys.argv[0].split("/")
+    if prog is None:
+        *_, prog = sys.argv[0].split("/")
     root = _create_index_node(command_pkg, ROOT_NAME, index_module, parser_variable)
     _populate_subparsers_actions(root)
-    _link_parsers(root, prefix)
+    _link_parsers(root, prog)
     return root.parser
 
 
