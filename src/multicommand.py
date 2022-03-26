@@ -15,7 +15,7 @@ from typing import TypeVar
 from typing import Union
 
 
-__version__ = "0.1.1"
+__version__ = "1.0.0"
 __all__ = ("create_parser",)
 
 INDEX_MODULE = "_index"
