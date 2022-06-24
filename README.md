@@ -33,7 +33,7 @@ All it needs is for each module to define a module-level `parser` variable which
 
 ## Motivation
 
-I like `argparse`. It's flexible, full-featured and it's part of the standard library, so if you have python you probably have argparse. I also like the "subcommand" pattern, i.e. one root command that acts as an entrypoint and subcommands to group related functionality. Of course, argparse can handle adding subcommands to parsers, but it's always felt a bit cumbersome, especially when there are many subcommands with lots of nesting.
+I like `argparse`. It's flexible, full-featured and it's part of the standard library, so if you have Python you probably have argparse. I also like the "subcommand" pattern, i.e. one root command that acts as an entrypoint and subcommands to group related functionality. Of course, argparse can handle adding subcommands to parsers, but it's always felt a bit cumbersome, especially when there are many subcommands with lots of nesting.
 
 If you've ever worked with technologies like `Next.js` or `oclif` (or even if you haven't) there's a duality between files and "objects". For Next.js each file under `pages/` maps to a webpage, in oclif each module under `commands/` maps to a CLI command. And that's the basic premise for multicommand: A light-weight package that lets you write one parser per file, pretty much in isolation, and it handles the wiring, exploiting the duality between command structure and file system structure.
 

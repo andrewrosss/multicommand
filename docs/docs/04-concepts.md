@@ -100,7 +100,7 @@ This segues nicely to the next concept.
 
 ## A "parser module"
 
-It's probably desireable to structure each module under `commands/` consistently. In general, having consistent coding habits is less of a statement toward multicommand usage and moreso just a general programming best practice.
+It's probably desirable to structure each module under `commands/` consistently. In general, having consistent coding habits is less of a statement toward multicommand usage and more so just a general programming best practice.
 
 That said, if you have no opinions or are open to suggestions, a module structure something like the following might be useful to adopt:
 
@@ -229,7 +229,7 @@ subcommands:
 
 Notice the descriptions of the `subcommands`: `ungreet` has a description, but `subcmd` doesn't. Both `ungreet` and `subcmd` are valid substitutions for `[command]` (above). So how do we add a description for `subcmd` and how can we even target that command? It's represented as a **_directory_** (sub-package) after all!
 
-As mentioned in the [Motivation](introduction#motivation) section of the [Introduction](introduction#motivation), `multicommand` aims to simplifiy authoring nested CLIs by _exploiting the duality between the filesystem hierarchy and command hierarchy._ In a filesystem there are files, but there are also directories! Well, basically everything's a file in linux filesystems, and there are more than two types of files, but for this analogy we only neet to know that there are (at least) two types of objects in the tree.
+As mentioned in the [Motivation](introduction#motivation) section of the [Introduction](introduction#motivation), `multicommand` aims to simplify authoring nested CLIs by _exploiting the duality between the filesystem hierarchy and command hierarchy._ In a filesystem there are files, but there are also directories! Well, basically everything's a file in linux filesystems, and there are more than two types of files, but for this analogy we only need to know that there are (at least) two types of objects in the tree.
 
 I mention files and directories because in the same way that directories act as a parent node for files (and other nested directories) in a filesystem, _index parsers_ act as the parent node for _terminal parsers_ (and other nested commands).
 
