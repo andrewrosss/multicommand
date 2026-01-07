@@ -8,6 +8,8 @@ Simple subcommand CLIs with argparse.
 
 ## Installation
 
+Requires Python 3.10 or later.
+
 ```bash
 pip install multicommand
 ```
