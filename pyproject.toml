@@ -57,6 +57,9 @@ select = [
     "C90", # mccabe complexity
 ]
 
+[tool.ruff.lint.isort]
+force-single-line = true
+
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 

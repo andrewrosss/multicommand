@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import pkgutil
 import sys
-from argparse import (
-    ArgumentParser,
-    _SubParsersAction,  # type: ignore
-)
+from argparse import ArgumentParser
+from argparse import _SubParsersAction  # type: ignore
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field
 from importlib import import_module
 from types import ModuleType
 from typing import Any
