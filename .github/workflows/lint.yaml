@@ -20,12 +20,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --system -e ".[dev]"
+          uv sync --extra dev
 
       - name: Lint with ruff
         run: |
-          ruff check .
+          uv run ruff check .
 
       - name: Check formatting with ruff
         run: |
-          ruff format --check .
+          uv run ruff format --check .
