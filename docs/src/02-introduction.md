@@ -1,8 +1,3 @@
----
-id: introduction
-sidebar_position: 2
----
-
 # Introduction
 
 `multicommand` uses only the standard library and is ~100 lines of code (modulo comments and whitespace)

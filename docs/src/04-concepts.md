@@ -1,8 +1,3 @@
----
-id: concepts
-sidebar_position: 3
----
-
 # Concepts
 
 Contrary to what the [Basic Usage](./basic-usage) example might have you believing, `multicommand` doesn't quite treat all modules in the subpackage passed to `multicommand.create_parser(subpkg)` eqaully. In Fact, there are a few things to keep in mind in order to make using `multicommand` as smooth as possible.

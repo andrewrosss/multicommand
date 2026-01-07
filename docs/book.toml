@@ -1,0 +1,11 @@
+[book]
+title = "multicommand"
+authors = ["Andrew Ross"]
+description = "Simple subcommand CLIs with argparse"
+language = "en"
+src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/andrewrosss/multicommand"
+edit-url-template = "https://github.com/andrewrosss/multicommand/edit/master/docs/{path}"
+site-url = "https://multicommand.vercel.app/"

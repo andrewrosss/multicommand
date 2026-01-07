@@ -1,8 +1,3 @@
----
-id: basic-usage
-sidebar_position: 3
----
-
 # Basic Usage
 
 We're going to create a small CLI with a single (deeply-nested) `greet` command/function:
