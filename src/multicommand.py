@@ -12,7 +12,6 @@ from typing import Any
 from typing import Iterator
 
 
-__version__ = "1.0.0"
 __all__ = ("create_parser",)
 
 PARSER_VARIABLE = "parser"
