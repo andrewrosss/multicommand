@@ -28,9 +28,9 @@ Homepage = "https://github.com/andrewrosss/multicommand"
 Repository = "https://github.com/andrewrosss/multicommand"
 Documentation = "https://multicommand.vercel.app"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "ruff>=0.8.0",
+    "ruff>=0.14.11",
     "pyright>=1.1.0",
     "pre-commit>=3.0.0",
 ]
