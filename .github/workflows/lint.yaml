@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --extra dev
+          uv sync
 
       - name: Lint with ruff
         run: |
