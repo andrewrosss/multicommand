@@ -31,6 +31,11 @@ def create_parser(
     return root.parser
 
 
+def _node_factory() -> list[_Node]:
+    """default_factory of _IndexNode. (For the type checker)"""
+    return []
+
+
 @dataclass
 class _TerminalNode:
     name: str
@@ -42,10 +47,10 @@ class _IndexNode:
     name: str
     parser: ArgumentParser
     subparsers_action: _SubParsersAction[ArgumentParser] | None = None
-    children: list[_TerminalNode | _IndexNode] = field(
+    children: list[_Node] = field(
         init=False,
         repr=False,
-        default_factory=list,
+        default_factory=_node_factory,
     )
 
 
@@ -104,21 +109,23 @@ def _link_parsers(node: _IndexNode) -> None:
 
 def _iter_indexes(
     node: _IndexNode,
-) -> Iterator[tuple[_IndexNode, tuple[_Node, ...] | None]]:
+) -> Iterator[tuple[_IndexNode, list[_Node] | None]]:
     for n, parents in _iter_nodes_with_parents(node):
         match n:
             case _IndexNode():
                 yield n, parents
+            case _TerminalNode():
+                continue
 
 
 def _iter_nodes_with_parents(
     node: _Node,
-    parents: tuple[_Node, ...] | None = None,
-) -> Iterator[tuple[_Node, tuple[_Node, ...] | None]]:
+    parents: list[_Node] | None = None,
+) -> Iterator[tuple[_Node, list[_Node] | None]]:
     """Traverse the tree depth-first post-order"""
     match node:
         case _IndexNode():
-            _parents = (node,) if parents is None else parents + (node,)
+            _parents: list[_Node] = [node] if parents is None else parents + [node]
             for child in node.children:
                 yield from _iter_nodes_with_parents(child, _parents)
             yield node, parents
