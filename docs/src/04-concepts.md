@@ -6,7 +6,7 @@ Throughout the remainder of this discussion assume we're working in a package ca
 
 ```text
 mypkg
-├── __init.py__
+├── __init__.py
 ├── cli.py
 └── commands
     ├── __init__.py
@@ -160,7 +160,7 @@ The key take-aways from the above snippet are (in order of appearance):
   import mypkg
 
   def main():
-      parser = mutlicommand.create_parser(mypkg.commands)
+      parser = multicommand.create_parser(mypkg.commands)
       args = parser.parse_args()
 
       # call the handler if one exists
@@ -194,7 +194,7 @@ The above CLI might manifest itself with the following package structure:
 
 ```text
 mypkg
-├── __init.py__
+├── __init__.py
 ├── cli.py
 └── commands
     ├── __init__.py

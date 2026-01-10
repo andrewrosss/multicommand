@@ -23,7 +23,7 @@ All it needs is for each module to define a module-level `parser` variable which
 
 - **Small** - The magic happens in a single file [multicommand.py](https://github.com/andrewrosss/multicommand/blob/master/src/multicommand.py)
 - **Simple API** - Structure commands however you like, then call `multicommand.create_parser(...)`
-- **Dependency-free** - You need python 3.6+, and that's it!
+- **Dependency-free** - You need python 3.10+, and that's it!
 
 A happy by-product of `multicommand` being small and depedency-free is that it's even _portable_. Don't want add an additional dependency? Grab [multicommand.py](https://github.com/andrewrosss/multicommand/blob/master/src/multicommand.py), drop in in your project, and use it like any other module. (Not a huge fan of this option, but it can be done)
 

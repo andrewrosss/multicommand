@@ -19,11 +19,11 @@ setup(
     description="A simple calculator in Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/andrewross/multicommand/examples/01_simple",
+    url="https://github.com/andrewrosss/multicommand/tree/master/examples/01_simple",
     author="Andrew Ross",
     author_email="andrew.ross.mail@gmail.com",
     packages=find_packages(),
-    python_requires=">=3.7, <4",
+    python_requires=">=3.10, <4",
     install_requires=["multicommand"],
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
