@@ -1,6 +1,6 @@
 [project]
 name = "multicommand"
-version = "1.0.0"
+version = "2.0.0"
 description = "Simple subcommand CLIs with argparse"
 authors = [{name = "Andrew Ross", email = "andrew.ross.mail@gmail.com"}]
 license = {text = "MIT"}
@@ -19,7 +19,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: User Interfaces",
     "Topic :: Utilities",
-    "Development Status :: 4 - Beta",
     "Typing :: Typed",
 ]
 
