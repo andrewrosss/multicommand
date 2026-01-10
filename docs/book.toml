@@ -5,11 +5,7 @@ description = "Simple subcommand CLIs with argparse"
 language = "en"
 src = "src"
 
-[preprocessor.admonish]
-command = "mdbook-admonish"
-
 [output.html]
 git-repository-url = "https://github.com/andrewrosss/multicommand"
 edit-url-template = "https://github.com/andrewrosss/multicommand/edit/master/docs/{path}"
 site-url = "https://multicommand.vercel.app/"
-additional-css = ["./assets/mdbook-admonish.css"]

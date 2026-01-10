@@ -1,1 +1,4 @@
 book/
+mdbook
+mdbook-admonish
+*.tar.gz
