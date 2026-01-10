@@ -28,25 +28,25 @@ def create_parser(
 ) -> ArgumentParser:
     if prog is None:
         *_, prog = sys.argv[0].split("/")
-    root = _create_index_node(command_pkg, prog, parser_variable)
+    root = _create_directory_node(command_pkg, prog, parser_variable)
     _populate_subparsers_actions(root)
     _link_parsers(root)
     return root.parser
 
 
 def _node_factory() -> list[_Node]:
-    """default_factory of _IndexNode. (For the type checker)"""
+    """default_factory of _DirectoryNode. (For the type checker)"""
     return []
 
 
 @dataclass
-class _TerminalNode:
+class _FileNode:
     name: str
     parser: ArgumentParser
 
 
 @dataclass
-class _IndexNode:
+class _DirectoryNode:
     name: str
     parser: ArgumentParser
     subparsers_action: _SubParsersAction[ArgumentParser] | None = None
@@ -57,7 +57,7 @@ class _IndexNode:
     )
 
 
-_Node = _IndexNode | _TerminalNode
+_Node = _DirectoryNode | _FileNode
 
 
 # The next three functions work together to build the parser tree.
@@ -67,95 +67,95 @@ _Node = _IndexNode | _TerminalNode
 # easier to read (IMO), and TBH the code is short and they're
 # marked as "private" anyway.
 #
-# They could be shoved into _IndexNode as static methods, maybe with
-# some kind of "build" classmethod on _IndexNode that calls them
+# They could be shoved into _DirectoryNode as static methods, maybe with
+# some kind of "build" classmethod on _DirectoryNode that calls them
 # in order, but I feel like a class with a bunch longer methods seems
 # less clear than these standalone functions. Plus, I just don't like
 # the extra level of indentation or extra syntactic cruft :P
 
 
-def _create_index_node(
+def _create_directory_node(
     pkg: ModuleType,
     name: str,
     parser_variable: str,
-) -> _IndexNode:
+) -> _DirectoryNode:
     """Recursively build a node tree from a package's modules.
 
-    This function assumes that it will recieve a package module (index node).
+    This function assumes that it will receive a package module (directory node).
     """
-    index_parser = getattr(pkg, parser_variable, ArgumentParser())
-    index_node = _IndexNode(name, index_parser)
+    dir_parser = getattr(pkg, parser_variable, ArgumentParser())
+    dir_node = _DirectoryNode(name, dir_parser)
 
     for info in pkgutil.iter_modules(pkg.__path__, pkg.__name__ + "."):
         *_, suffix = info.name.split(".")
         mod = import_module(info.name)
 
         if info.ispkg:
-            # package (index parser) -> build this subtree and add it as a child
-            node = _create_index_node(mod, suffix, parser_variable)
-            index_node.children.append(node)
+            # package (directory parser) -> build this subtree and add it as a child
+            node = _create_directory_node(mod, suffix, parser_variable)
+            dir_node.children.append(node)
         else:
-            # module (terminal parser) -> add as a terminal child
-            term_parser = getattr(mod, parser_variable, None)
-            if isinstance(term_parser, ArgumentParser):
-                index_node.children.append(_TerminalNode(suffix, term_parser))
+            # module (file parser) -> add as a file child
+            file_parser = getattr(mod, parser_variable, None)
+            if isinstance(file_parser, ArgumentParser):
+                dir_node.children.append(_FileNode(suffix, file_parser))
 
-    return index_node
+    return dir_node
 
 
-def _populate_subparsers_actions(node: _IndexNode):
-    """Add subparsers actions to index nodes that have children.
+def _populate_subparsers_actions(node: _DirectoryNode):
+    """Add subparsers actions to directory nodes that have children.
 
     This must be done before linking parsers, as linking requires the
     subparsers action to be present.
 
     Standalone, this function looks weird, but it expects to be called after
-    the entire tree has been built (i.e., after _create_index_node), and
+    the entire tree has been built (i.e., after _create_directory_node), and
     before _link_parsers.
     """
-    for n, _ in _iter_indexes(node):
+    for n, _ in _iter_directory_nodes(node):
         if n.children:
             # if there are children, create a subparsers action
             #
             # note: we only do this if there are children, if there
-            #       aren't, it's theoretically possible to have an
-            #       index parser (_index.py) act as a terminal parser,
+            #       aren't, it's theoretically possible to have a
+            #       directory parser act as a file parser,
             #       and in that case, we don't want to add a subparsers action.
             n.subparsers_action = n.parser.add_subparsers(
                 description=" ", metavar="command"
             )
 
 
-def _link_parsers(node: _IndexNode) -> None:
+def _link_parsers(node: _DirectoryNode) -> None:
     """Register child parsers with their parent's subparsers action.
 
     This function is expected to be called after _populate_subparsers_actions.
     """
-    for index, parents in _iter_indexes(node):
-        for child in index.children:
-            if not index.subparsers_action:
+    for dir_node, parents in _iter_directory_nodes(node):
+        for child in dir_node.children:
+            if not dir_node.subparsers_action:
                 continue  # should not happen if _populate_subparsers_actions was called
 
             intermediate = [n.name for n in parents] if parents else []
-            prog = " ".join((*intermediate, index.name, child.name))
+            prog = " ".join((*intermediate, dir_node.name, child.name))
             parser_config = _extract_parser_config(child.parser)
             parser_config["prog"] = prog
             parser_config["help"] = _short_summary(child.parser.description)
             parser_config["add_help"] = False
-            index.subparsers_action.add_parser(
+            dir_node.subparsers_action.add_parser(
                 child.name, parents=[child.parser], **parser_config
             )
 
 
-def _iter_indexes(
-    node: _IndexNode,
-) -> Iterator[tuple[_IndexNode, list[_Node] | None]]:
-    """Yield only IndexNode items from the tree traversal."""
+def _iter_directory_nodes(
+    node: _DirectoryNode,
+) -> Iterator[tuple[_DirectoryNode, list[_Node] | None]]:
+    """Yield only DirectoryNode items from the tree traversal."""
     for n, parents in _iter_nodes_with_parents(node):
         match n:
-            case _IndexNode():
+            case _DirectoryNode():
                 yield n, parents
-            case _TerminalNode():
+            case _FileNode():
                 continue
 
 
@@ -165,12 +165,12 @@ def _iter_nodes_with_parents(
 ) -> Iterator[tuple[_Node, list[_Node] | None]]:
     """Traverse the tree depth-first post-order"""
     match node:
-        case _IndexNode():
+        case _DirectoryNode():
             _parents: list[_Node] = [node] if parents is None else parents + [node]
             for child in node.children:
                 yield from _iter_nodes_with_parents(child, _parents)
             yield node, parents
-        case _TerminalNode():
+        case _FileNode():
             yield node, parents
 
 

@@ -171,17 +171,16 @@ The key take-aways from the above snippet are (in order of appearance):
       parser.print_help()
   ```
 
-## Terminal Parsers
+## File Parsers
 
-A **_terminal parser_** is any parser which comes from (is defined in):
+A **_file parser_** is any parser which comes from (is defined in):
 
 - An importable _module_ (i.e. a file ending in `.py`)
 - The module is located in the `commands/` (or similar) sub-package
-- The module is **not** named `_index.py`
 
-These parsers basically map directly to some specific functionality of the CLI and "end there". That is, there are no further subcommands (hence the name _terminal_ parsers). If `git` was implemented with `multicommand` the parsers defining the `git add` and `git commit` commands could probably be _terminal parsers_.
+These parsers basically map directly to some specific functionality of the CLI and "end there". That is, there are no further subcommands. If `git` was implemented with `multicommand` the parsers defining the `git add` and `git commit` commands could probably be _file parsers_.
 
-In many (most?) cases terminal parsers are all you need. especially if the topology of the CLI is simple and/or only "one level deep", for example:
+In many (most?) cases file parsers are all you need, especially if the topology of the CLI is simple and/or only "one level deep", for example:
 
 ```bash
 mycli add <thing>
@@ -204,7 +203,7 @@ mypkg
     └── show.py
 ```
 
-## Index Parsers
+## Directory Parsers
 
 You may have noticed something in the [Bonus](basic-usage#bonus) section of the [Basic Usage](basic-usage) document. Specifically, take a look at the help produced by running `python -m mypkg.cli topic cmd --help` (reproduced here):
 
@@ -226,16 +225,16 @@ Notice the descriptions of the `subcommands`: `ungreet` has a description, but `
 
 As mentioned in the [Motivation](introduction#motivation) section of the [Introduction](introduction#motivation), `multicommand` aims to simplify authoring nested CLIs by _exploiting the duality between the filesystem hierarchy and command hierarchy._ In a filesystem there are files, but there are also directories! Well, basically everything's a file in linux filesystems, and there are more than two types of files, but for this analogy we only need to know that there are (at least) two types of objects in the tree.
 
-I mention files and directories because in the same way that directories act as a parent node for files (and other nested directories) in a filesystem, _index parsers_ act as the parent node for _terminal parsers_ (and other nested commands).
+I mention files and directories because in the same way that directories act as a parent node for files (and other nested directories) in a filesystem, _directory parsers_ act as the parent node for _file parsers_ (and other nested commands).
 
-So, an **_index parser_** is any parser which comes from (is defined in):
+So, a **_directory parser_** is any parser which comes from (is defined in):
 
-- An importable _module_ named `_index.py`,
-- The module is located in the `commands/` (or similar) sub-package.
+- A package's `__init__.py` file,
+- The package is located in the `commands/` (or similar) sub-package.
 
-These are the only requirements. Circling back to our [Basic Usage](basic-usage) question above, we could add a description by adding the following _index parser_:
+These are the only requirements. Circling back to our [Basic Usage](basic-usage) question above, we could add a description by adding a _directory parser_ to the `__init__.py` of the `subcmd` package:
 
-```python title=mypkg/parsers/topic/cmd/subcmd/_index.py
+```python title=mypkg/parsers/topic/cmd/subcmd/__init__.py
 import argparse
 
 
@@ -264,10 +263,14 @@ subcommands:
     ungreet   Show an un-greeting
 ```
 
-### Thoughts on index parsers
+### Thoughts on directory parsers
 
-TODO ...
+**Directory parsers can act like file parsers.** A directory parser defined in `__init__.py` can have its own arguments and handler, effectively making it both a parent for subcommands _and_ a command in its own right. For example, `mycli topic` could accept arguments directly while also having `mycli topic subthing` as a subcommand.
 
-- An index parser can "act like" a terminal parser.
-- They should probably really only take options.
-- Up to now we haven't needed to define any `_index.py` modules, so what gives?
+**Directory parsers should generally only define options (flags), not positional arguments.** Since subcommand names are themselves positional, having a directory parser that expects positional arguments can create ambiguity or awkward UX. Stick to `--flag` style arguments for directory parsers.
+
+**You often don't need to define directory parsers explicitly.** Throughout the examples so far, we haven't needed to create `__init__.py` files with parsers—multicommand automatically generates minimal directory parsers for any package in your command hierarchy. You only need to define one explicitly when you want to:
+
+- Add a description (shown in parent's help text)
+- Define shared options at that level
+- Attach a handler for when the directory command is invoked without a subcommand
