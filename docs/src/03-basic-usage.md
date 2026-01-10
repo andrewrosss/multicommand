@@ -33,8 +33,7 @@ Create the subpackage to house our parsers:
 mkdir -p mypkg/parsers/topic/cmd/subcmd
 ```
 
-:::note
-
+```admonish note
 That's a long path. **Feel free to skip over this note and continue**, but if you're perplexed by this directory structure here's a high-level explanation:
 
 Part of that path should already be looking familiar. (The `topic/cmd/subcmd` part - that's no coicidence!) Basically, `mypkg` is the name of what will become our installable package (i.e. we'll eventually be able to `import mypkg`).
@@ -42,8 +41,7 @@ Part of that path should already be looking familiar. (The `topic/cmd/subcmd` pa
 The folder `mypkg/parsers` is going to be a sub-package (i.e it's going to contain an `__init__.py` file - in fact, all these folders will be sub-packages). This sub-package (`mypkg.parsers`) will be the thing that we pass to `multicommand`, from which we'll get our configured `argparse.ArgumentParser` instance.
 
 As for the remaining folders, `multicommand` will use those to create the command hierarchy that we're after.
-
-:::
+```
 
 Create the `*.py` files we'll need.
 
@@ -155,11 +153,9 @@ Add the module:
 touch mypkg/parsers/topic/cmd/ungreet.py
 ```
 
-:::note
-
+```admonish note
 Notice that since we want to create the command `<mycli> topic cmd ungreet ...` we're creating the module `<sub-pkg-that-we'll-pass-to-multicommand>/topic/cmd/ungreet.py`, where in this case `<sub-pkg-that-we'll-pass-to-multicommand>` is `mypkg/parsers/`
-
-:::
+```
 
 with contents:
 
