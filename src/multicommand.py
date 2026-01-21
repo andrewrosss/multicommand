@@ -121,8 +121,8 @@ def _populate_subparsers_actions(node: _DirectoryNode):
             #       aren't, it's theoretically possible to have a
             #       directory parser act as a file parser,
             #       and in that case, we don't want to add a subparsers action.
-            n.subparsers_action = n.parser.add_subparsers(
-                description=" ", metavar="command"
+            n.subparsers_action = _get_or_add_subparsers(
+                n.parser, description=" ", metavar="command"
             )
 
 
@@ -172,6 +172,26 @@ def _iter_nodes_with_parents(
             yield node, parents
         case _FileNode():
             yield node, parents
+
+
+def _get_or_add_subparsers(
+    parser: ArgumentParser, **kwargs: Any
+) -> _SubParsersAction[ArgumentParser]:
+    """Get existing subparsers action or create one if none exists."""
+    if parser._subparsers is not None:
+        # already has subparsers - find and return the action
+        #
+        # note: we need to do this because if `add_subparsers` has already been
+        #       called (e.g. by userland code), calling it again will raise an exception
+        #       see: https://github.com/python/cpython/blob/1f16df4bfe5cfbe4ac40cc9c6d15f44bcfd99a64/Lib/argparse.py#L1873-L1874
+        for action in parser._actions:
+            if isinstance(action, _SubParsersAction):
+                return action  # type: ignore[return-value]
+        # should never reach here if _subparsers is set ...
+        raise RuntimeError("_subparsers set but no _SubParsersAction found")
+
+    # no subparsers yet - create one
+    return parser.add_subparsers(**kwargs)
 
 
 def _short_summary(description: str | None) -> str | None:
